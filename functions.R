@@ -14,12 +14,13 @@ library(tidyr)
 library(stringr)
 library(plyr)
 
-path <- "S:/donnees/public/data.gouv.fr"
-ECON1016 <- readRDS(sprintf("%s/ECON1016.rds",path))
-TOUR1083 <- readRDS(sprintf("%s/TOUR1083.rds",path))
-EMPL1019 <- readRDS(sprintf("%s/EMPL1019.rds",path))
-ispfPalette <- c("#56B4E9", "#B359B4", "#FF9D37", "#009FA4", "#999999", "#FF0000", "#D55E00", "#CC79A7", "#345687")
-
+#path <- "S:/donnees/public/data.gouv.fr"
+#ECON1016 <- readRDS(sprintf("%s/ECON1016.rds",path))
+#TOUR1083 <- readRDS(sprintf("%s/TOUR1083.rds",path))
+#EMPL1019 <- readRDS(sprintf("%s/EMPL1019.rds",path))
+#ispfPalette <- c("#56B4E9", "#B359B4", "#FF9D37", "#009FA4", "#999999", "#FF0000", "#D55E00", "#CC79A7", "#345687")
+path <- sprintf("%s/input",getwd())
+DATA <- read.csv2(sprintf("%s/exemple.csv",path))
 # General settings
 # Templates
 HTemplate <- '%{x} | %{y:.0f}<extra></extra>'
@@ -33,33 +34,33 @@ yaxis_template <- list(title = '',
                        showgrid = TRUE)
 # Plots with plotly
 
+##############################################################################################################
 # Line chart
 smartPlotly.line <- function (dt,
                               x=1,
                               ticksRound=-1,
                               legendOrient = 'h',
                               colorset=c("blue","green","red","orange","tail"),
-                              digitExclude=c(),
-                              digits=0, 
+                              digits=rep(c(0),times=5), 
                               milSep=' ', 
-                              decSep='.', 
+                              decSep=',', 
                               hoverPrefix='',
                               hoverSuffix='',
                               hoverSep=c(' | ',' : '),
                               hoverX=T,
                               hoverY=T,
                               hoverTimeFormat=NA,
-                              smoothLine=c(T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T),
-                              size=c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1),
-                              style=c("solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid"),
+                              smoothLine=rep(c(T),times=5),
+                              size=rep(c(1),times=5),
+                              style=rep(c("solid"),times=5),
                               chartLocale="fr"){
     
   dt <- dt %>% relocate(x)
+  dt[,-x] <- sapply( dt[,-x], as.numeric)
   hovertxt <- lapply(colnames(dt[,2:ncol(dt)]), FUN=function(feat){
-    if (feat %in% digitExclude) digits <- 0
-    if (which(colnames(dt) == feat) %in% digitExclude) digits <- 0
-    
+    colnum <- (which(colnames(dt)==feat))
     if (hoverX==T && hoverY==T && !is.na(hoverTimeFormat)){
+      cat("A\n")
       Y <- paste0(hoverPrefix,
                   format(dt[[x]],hoverTimeFormat),
                   hoverSep[1],
@@ -68,20 +69,22 @@ smartPlotly.line <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = 'f'),
                   hoverSuffix)
     }else if(hoverX==T && hoverY==F && !is.na(hoverTimeFormat)){
+      cat("B\n")
       Y <- paste0(hoverPrefix,
                   format(dt[[x]],hoverTimeFormat),
                   hoverSep[2],
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = 'f'),
                   hoverSuffix)
     }else if (hoverX==T && hoverY==T && is.na(hoverTimeFormat)){
+      cat("C\n")
       Y <- paste0(hoverPrefix,
                   dt[[x]],
                   hoverSep[1],
@@ -90,17 +93,18 @@ smartPlotly.line <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = 'f'),
                   hoverSuffix)
     }else if(hoverX==T && hoverY==F && is.na(hoverTimeFormat)){
+      cat("D\n")
       Y <- paste0(hoverPrefix,
                   dt[[x]],
                   hoverSep[2],
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = 'f'),
                   hoverSuffix)
     }else if(hoverX==F && hoverY==T){
@@ -110,7 +114,7 @@ smartPlotly.line <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum+1],
                           format = 'f'),
                   hoverSuffix)
     }else{
@@ -118,7 +122,7 @@ smartPlotly.line <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum+1],
                           format = 'f'),
                   hoverSuffix)
       }
@@ -128,9 +132,9 @@ smartPlotly.line <- function (dt,
                type = 'scatter',
                mode = 'line')
   for(i in 2:ncol(dt)){
-    if (smoothLine[i]==T) lineShape = list(shape = 'spline', width = size[i-1], dash = style[i-1], color=colorset[i-1])
-    else lineShape = list(color=colorset[1], width = size[i-1], dash = style[i-1])
-    cat(sprintf(">>> Creating line for feature [%s] : size = %s | color = %s | dash = %s\n",colnames(dt)[i], size[i], colorset[i], style[i]))
+    if (smoothLine[i-1]==T) lineShape = list(shape = 'spline', width = size[i-1], dash = style[i-1], color=colorset[i-1])
+    else lineShape = list(color=colorset[i-1], width = size[i-1], dash = style[i-1],color=colorset[i-1])
+    cat(sprintf(">>> Creating line for feature [%s] : size = %s | color = %s | dash = %s\n",colnames(dt)[i], size[i-1], colorset[i-1], style[i-1]))
     p <- p %>% add_trace(x = as.formula(paste0('~`', colnames(dt)[x],'`')),
                          y = as.formula(paste0('~`', colnames(dt)[i],'`')),
                          name = colnames(dt)[i],
@@ -139,12 +143,12 @@ smartPlotly.line <- function (dt,
                          line = lineShape)
   }
   
-  maxValue=max(dt[,-..x])
-  minValue=min(dt[,-..x])
-  dataOrder <- floor(log10(abs(max(dt[,-..x]))))
+  maxValue=max(dt[,-x])
+  minValue=min(dt[,-x])
+  dataOrder <- floor(log10(abs(max(dt[,-1]))))
   ticksRound <- round(abs(maxValue)/5, digits = -(dataOrder-1))
   ticklabels <- round_any(seq(from=round(minValue), to=round_any(maxValue, ticksRound), by=ticksRound),ticksRound)
-  ticktexts <- c(formatC(ticklabels, big.mark = milSep, format = "f", digits = digits))
+  ticktexts <- c(formatC(ticklabels, big.mark = milSep, format = "f", digits = digits[1]))
   p <- p %>% layout(yaxis=list(tickvals = ticklabels,
                                           ticktext = ticktexts))
   p <- p %>% layout(yaxis = yaxis_template, 
@@ -158,6 +162,7 @@ smartPlotly.line <- function (dt,
   return(p)
 }
 
+######################################################################################################################
 # Bar chart
 smartPlotly.bar <- function (dt,
                              x=1,

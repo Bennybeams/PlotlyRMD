@@ -134,7 +134,7 @@ smartPlotly.line <- function (dt,
   for(i in 2:ncol(dt)){
     if (smoothLine[i-1]==T) lineShape = list(shape = 'spline', width = size[i-1], dash = style[i-1], color=colorset[i-1])
     else lineShape = list(color=colorset[i-1], width = size[i-1], dash = style[i-1],color=colorset[i-1])
-    cat(sprintf(">>> Creating line for feature [%s] : size = %s | color = %s | dash = %s\n",colnames(dt)[i], size[i-1], colorset[i-1], style[i-1]))
+    cat(sprintf(">>> Creating line for feature [%s] : size = %s | color = %s | dash = %s | digits = %s\n",colnames(dt)[i], size[i-1], colorset[i-1], style[i-1], digits [i]))
     p <- p %>% add_trace(x = as.formula(paste0('~`', colnames(dt)[x],'`')),
                          y = as.formula(paste0('~`', colnames(dt)[i],'`')),
                          name = colnames(dt)[i],
@@ -170,7 +170,7 @@ smartPlotly.bar <- function (dt,
                              legendOrient = 'h',
                              colorset=c("blue","green","red","orange","tail"),
                              digitExclude=c(),
-                             digits=2, 
+                             digits=rep(c(0),times=5), 
                              milSep=' ', 
                              decSep=',', 
                              hoverPrefix='',
@@ -183,13 +183,12 @@ smartPlotly.bar <- function (dt,
                              hoverInfo=c(T),
                              chartLocale="fr",
                              legendformat="f",
-                             axisformat="s"){
+                             axisformat="f"){
   
   dt <- dt %>% relocate(x)
+  dt[,-x] <- sapply( dt[,-x], as.numeric)
   hovertxt <- lapply(colnames(dt[,2:ncol(dt)]), FUN=function(feat){
-    if (feat %in% digitExclude) digits <- 0
-    if (which(colnames(dt) == feat) %in% digitExclude) digits <- 0
-    
+    colnum <- (which(colnames(dt)==feat))
     if (hoverX==T && hoverY==T && !is.na(hoverTimeFormat)){
       Y <- paste0(hoverPrefix,
                   format(dt[[1]],hoverTimeFormat),
@@ -199,7 +198,7 @@ smartPlotly.bar <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = legendformat),
                   hoverSuffix)
     }else if(hoverX==T && hoverY==F && !is.na(hoverTimeFormat)){
@@ -209,7 +208,7 @@ smartPlotly.bar <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = legendformat),
                   hoverSuffix)
     }else if (hoverX==T && hoverY==T && is.na(hoverTimeFormat)){
@@ -221,7 +220,7 @@ smartPlotly.bar <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = legendformat),
                   hoverSuffix)
     }else if(hoverX==T && hoverY==F && is.na(hoverTimeFormat)){
@@ -231,7 +230,7 @@ smartPlotly.bar <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = legendformat),
                   hoverSuffix)
     }else if(hoverX==F && hoverY==T){
@@ -241,7 +240,7 @@ smartPlotly.bar <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = legendformat),
                   hoverSuffix)
     }else{
@@ -249,7 +248,7 @@ smartPlotly.bar <- function (dt,
                   formatC((dt[[feat]]), 
                           big.mark = milSep,
                           decimal.mark=decSep,
-                          digits = digits,
+                          digits = digits[colnum],
                           format = legendformat),
                   hoverSuffix)
     }
@@ -258,19 +257,22 @@ smartPlotly.bar <- function (dt,
   p <- plot_ly(data = dt,
                type = 'bar')
   for(i in 2:ncol(dt)){
-    cat(sprintf(">>> Creating line for feature [%s] : color = %s \n",colnames(dt)[i], colorset[i]))
+    cat(sprintf(">>> Creating line for feature [%s] : color = %s | digits = %s \n",colnames(dt)[i], colorset[i-1], digits[i]))
     if ((is.na(inBarInfo[i]) || inBarInfo[i]==T) && (is.na(hoverInfo[i]) || hoverInfo[i]==T)) {
       cat(">>> Inbar info and hover info \n")
       p <- p %>% add_trace(x = as.formula(paste0('~`', colnames(dt)[1],'`')),
                            y = as.formula(paste0('~`', colnames(dt)[i],'`')),
                            name = colnames(dt)[i],
+                           marker = list(color = colorset[i-1]),
                            text=hovertxt[[i-1]],
                            hoverinfo='text')
+      
     }else if ((!is.na(inBarInfo[i]) || inBarInfo[i]==F) && (is.na(hoverInfo[i]) || hoverInfo[i]==T)) {
       cat(">>> No inbar info but hover info \n")
       p <- p %>% add_trace(x = as.formula(paste0('~`', colnames(dt)[1],'`')),
                            y = as.formula(paste0('~`', colnames(dt)[i],'`')),
                            name = colnames(dt)[i],
+                           marker = list(color = colorset[i-1]),
                            text='',
                            hoverinfo="text",
                            hovertext = hovertxt[[i-1]])
@@ -280,6 +282,7 @@ smartPlotly.bar <- function (dt,
       p <- p %>% add_trace(x = as.formula(paste0('~`', colnames(dt)[1],'`')),
                            y = as.formula(paste0('~`', colnames(dt)[i],'`')),
                            name = colnames(dt)[i],
+                           marker = list(color = colorset[i-1]),
                            text=hovertxt[[i-1]],
                            hoverinfo='text')
       
@@ -287,7 +290,8 @@ smartPlotly.bar <- function (dt,
       cat(">>> no info at all \n")
       p <- p %>% add_trace(x = as.formula(paste0('~`', colnames(dt)[1],'`')),
                            y = as.formula(paste0('~`', colnames(dt)[i],'`')),
-                           name = colnames(dt)[i])
+                           name = colnames(dt)[i],
+                           marker = list(color = colorset[i-1]))
     }
   }
   
@@ -298,7 +302,7 @@ smartPlotly.bar <- function (dt,
     dataOrder <- floor(log10(abs(max(dt[,-1]))))
     ticksRound <- round(abs(maxValue)/5, digits = -(dataOrder-1))
     ticklabels <- round_any(seq(from=round(minValue), to=round_any(maxValue, ticksRound), by=ticksRound),ticksRound)
-    ticktexts <- c(formatC(ticklabels, big.mark = milSep, format = axisformat, digits = digits))
+    ticktexts <- c(formatC(ticklabels, big.mark = milSep, format = axisformat, digits = digits[1]))
     p <- p %>% layout(yaxis=list(tickvals = ticklabels,
                                  ticktext = ticktexts))
   }
